@@ -1,39 +1,39 @@
 #!/bin/bash
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=A5
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=A6
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=A7
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Basic_A0
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Basic_A1
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Basic_A2
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Basic_A3
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Basic_A4
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=ExtraLarge
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=ExtraSmall
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Large
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Medium
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Small
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D1
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D1_v2
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D11
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D11_v2
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D12
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D12_v2
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D13
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D13_v2
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D14
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D14_v2
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D2
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D2_v2
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D3
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D3_v2
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D4
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D4_v2
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D5_v2
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_DS1
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_DS11
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_DS12
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_DS13
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_DS14
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_DS2
-python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_DS3
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=A5 & 
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=A6 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=A7 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Basic_A0 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Basic_A1 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Basic_A2 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Basic_A3 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Basic_A4 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=ExtraLarge &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=ExtraSmall &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Large &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Medium &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Small &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D1 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D1_v2 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D11 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D11_v2 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D12 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D12_v2 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D13 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D13_v2 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D14 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D14_v2 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D2 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D2_v2 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D3 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D3_v2  &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D4 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D4_v2 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_D5_v2 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_DS1 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_DS11 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_DS12 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_DS13 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_DS14 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_DS2 &
+python /home/xfy1dvr/projects/PerfKitBenchmarker/pkb.py --cloud=Azure --benchmarks=coremark --machine_type=Standard_DS3 &
 
