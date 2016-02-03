@@ -38,7 +38,7 @@ SSH_PORT = 22
 # account upon creation.
 # See https://github.com/MSOpenTech/azure-xplat-cli/pull/349
 STORAGE_ACCOUNT_PREFIX = 'portalvhds'
-
+RESOURCE_GROUP_PREFIX = 'portalrgrp'
 
 class _AzureEndpoint(resource.BaseResource):
   """An object representing an endpoint to an Azure VM.
@@ -118,14 +118,61 @@ class AzureFirewall(network.BaseFirewall):
     pass
 
 
+class AzureResourceGroup(resource.BaseResource):
+  """Object representing an Azure Resource group."""
+
+  def __init__(self, name, storage_type, zone):
+    super(AzureResourceGroup, self).__init__()
+    self.name = name
+    self.storage_type = storage_type
+    self.zone = zone
+    #Dien - create new variable to store group
+
+
+  def _Create(self):
+    """Creates the storage account."""
+    create_cmd = [AZURE_PATH,
+                  'group',
+                  'create',
+                  self.name]
+    vm_util.IssueCommand(create_cmd)
+
+  def _Delete(self):
+    """Deletes the storage account."""
+    delete_cmd = [AZURE_PATH,
+                  'group',
+                  'delete',
+                  '--quiet',
+                  self.name]
+    vm_util.IssueCommand(delete_cmd)
+
+  def _Exists(self):
+    """Returns true if the storage account exists."""
+    show_cmd = [AZURE_PATH,
+                'group',
+                'show',
+                '--json',
+                self.name]
+    stdout, _, _ = vm_util.IssueCommand(show_cmd, suppress_warning=True)
+    try:
+      json.loads(stdout)
+    except ValueError:
+      return False
+    return True
+
+
 class AzureStorageAccount(resource.BaseResource):
   """Object representing an Azure Storage Account."""
 
-  def __init__(self, name, storage_type, zone):
+  def __init__(self, name, storage_type, zone,resource_group):
     super(AzureStorageAccount, self).__init__()
     self.name = name
     self.storage_type = storage_type
     self.zone = zone
+    self.resource_group = resource_group
+
+    #Dien - create new variable to store group
+
 
   def _Create(self):
     """Creates the storage account."""
@@ -135,6 +182,7 @@ class AzureStorageAccount(resource.BaseResource):
                   'create',
                   '--location=%s' % self.zone,
                   '--type=%s' % self.storage_type,
+                  '--resource-group=%s' % self.resource_group,
                   self.name]
     vm_util.IssueCommand(create_cmd)
 
@@ -144,6 +192,7 @@ class AzureStorageAccount(resource.BaseResource):
                   'storage',
                   'account',
                   'delete',
+                  '--resource-group=%s' % self.resource_group,
                   '--quiet',
                   self.name]
     vm_util.IssueCommand(delete_cmd)
@@ -154,6 +203,7 @@ class AzureStorageAccount(resource.BaseResource):
                 'storage',
                 'account',
                 'show',
+                '--resource-group=%s' % self.resource_group,
                 '--json',
                 self.name]
     stdout, _, _ = vm_util.IssueCommand(show_cmd, suppress_warning=True)
@@ -167,10 +217,11 @@ class AzureStorageAccount(resource.BaseResource):
 class AzureVirtualNetwork(resource.BaseResource):
   """Object representing an Azure Virtual Network."""
 
-  def __init__(self, name, zone):
+  def __init__(self, name, zone,resource_group):
     super(AzureVirtualNetwork, self).__init__()
     self.name = name
     self.zone = zone
+    self.resource_group = resource_group
 
   def _Create(self):
     """Creates the virtual network."""
@@ -179,6 +230,7 @@ class AzureVirtualNetwork(resource.BaseResource):
                   'vnet',
                   'create',
                   '--location', self.zone,
+                  '--resource-group=%s' % self.resource_group,
                   self.name]
     vm_util.IssueCommand(create_cmd)
 
@@ -189,6 +241,7 @@ class AzureVirtualNetwork(resource.BaseResource):
                   'vnet',
                   'delete',
                   '--quiet',
+                  '--resource-group=%s' % self.resource_group,
                   self.name]
     vm_util.IssueCommand(delete_cmd)
 
@@ -198,6 +251,7 @@ class AzureVirtualNetwork(resource.BaseResource):
                 'network',
                 'vnet',
                 'show',
+                '--resource-group=%s' % self.resource_group,
                 '--json',
                 self.name]
     stdout, _, _ = vm_util.IssueCommand(show_cmd, suppress_warning=True)
@@ -217,13 +271,20 @@ class AzureNetwork(network.BaseNetwork):
     name = ('pkb%s%s' %
             (FLAGS.run_uri, str(uuid.uuid4())[-12:])).lower()[:MAX_NAME_LENGTH]
     storage_account_name = (STORAGE_ACCOUNT_PREFIX + name)[:MAX_NAME_LENGTH]
+    resource_group_account = (RESOURCE_GROUP_PREFIX + name)[:MAX_NAME_LENGTH]
+
+    self.resource_group_account = AzureResourceGroup(
+        resource_group_account, FLAGS.azure_storage_type, self.zone)
+
     self.storage_account = AzureStorageAccount(
-        storage_account_name, FLAGS.azure_storage_type, self.zone)
-    self.vnet = AzureVirtualNetwork(name, self.zone)
+        storage_account_name, FLAGS.azure_storage_type, self.zone,resource_group_account)
+
+    self.vnet = AzureVirtualNetwork(name, self.zone,resource_group_account)
 
   @vm_util.Retry()
   def Create(self):
     """Creates the actual network."""
+    self.resource_group_account.Create()
     self.storage_account.Create()
     self.vnet.Create()
 
@@ -231,3 +292,4 @@ class AzureNetwork(network.BaseNetwork):
     """Deletes the actual network."""
     self.vnet.Delete()
     self.storage_account.Delete()
+    self.resource_group_account.Delete()
