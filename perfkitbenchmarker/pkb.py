@@ -411,11 +411,11 @@ def SetUpPKB():
   SetUpPKB() also modifies the local file system by creating a temp
   directory and storing new SSH keys.
   """
-
-  for executable in REQUIRED_EXECUTABLES:
-    if not vm_util.ExecutableOnPath(executable):
-      raise errors.Setup.MissingExecutableError(
-          'Could not find required executable "%s"', executable)
+#
+#  for executable in REQUIRED_EXECUTABLES:
+#    if not vm_util.ExecutableOnPath(executable):
+#      raise errors.Setup.MissingExecutableError(
+#          'Could not find required executable "%s"', executable)
 
   if FLAGS.run_uri is None:
     if FLAGS.run_stage not in [STAGE_ALL, STAGE_PROVISION]:
@@ -431,6 +431,7 @@ def SetUpPKB():
             'No run_uri specified. Could not run "%s"', FLAGS.run_stage)
     else:
       FLAGS.run_uri = str(uuid.uuid4())[-8:]
+        #'[DN]: generate a random UUID caled UUID4'
   elif not FLAGS.run_uri.isalnum() or len(FLAGS.run_uri) > MAX_RUN_URI_LENGTH:
     raise errors.Setup.BadRunURIError('run_uri must be alphanumeric and less '
                                       'than or equal to 8 characters in '
