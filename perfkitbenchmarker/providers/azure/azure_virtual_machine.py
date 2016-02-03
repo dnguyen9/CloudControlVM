@@ -176,14 +176,14 @@ class AzureVirtualMachine(virtual_machine.BaseVirtualMachine):
     super(AzureVirtualMachine, self).__init__(vm_spec)
     self.network = azure_network.AzureNetwork.GetNetwork(self)
     self.firewall = azure_network.AzureFirewall.GetFirewall()
-    self.service = AzureService(self.name, self.zone)
+#    self.service = AzureService(self.name, self.zone)
     disk_spec = disk.BaseDiskSpec()
     self.os_disk = azure_disk.AzureDisk(disk_spec, self.name, self.machine_type)
     self.max_local_disks = 1
 
   def _CreateDependencies(self):
     """Create VM dependencies."""
-    self.service.Create()
+#    self.service.Create()
     # _GetDefaultImage may call the Azure CLI.
     self.image = self.image or _GetDefaultImage(self.OS_TYPE)
 
@@ -191,14 +191,25 @@ class AzureVirtualMachine(virtual_machine.BaseVirtualMachine):
     """Delete VM dependencies."""
     if self.os_disk.name:
       self.os_disk.Delete()
-    self.service.Delete()
+#    self.service.Delete()
 
   def _Create(self):
+#azure vm create --nic-name perfkit-nix --location eastus2 --resource-group dien --os-type linux --image-urn canonical:ubuntuserver:12.04.2-LTS:12.04.201306240 \
+  # --name dienvm --vm-size Standard_D1 --public-ip-name pubixp --vnet-name vnetdien \
+  # --admin-username perfkitusr --admin-password azure vm create --nic-name perfkit-nix \
+  # --location eastus2 --resource-group dien --os-type linux --image-urn canonical:ubuntuserver:12.04.2-LTS:12.04.201306240 \
+  # --name dienvm --vm-size Standard_D1 --public-ip-name pubixp --vnet-name vnetdien --admin-username perfkitusr \
+  # --admin-password helE3sslo! --vnet-address-prefix 10.0.0.0/11 --public-ip-domain-name zxcve44 --storage-account-name dienstorage
+#azure network vnet create --resource-group dien vnet--dien --location eastus2
+#US --virtual-net                    work-name=pkb03d2b753918ca93cfe1c --vm-size=Standard_DS3 pkb-03d2b753-0 b39f27a8b8c64d52b05eac6a62ebad85__Ubuntu-14_04_3-LTS-amd64-server-20                    160119-en-us-30GB perfkit --ssh=22 --ssh-cert=/tmp/perfkitbenchmarker/run_03d2b753/perfkitbenchmarker.pem --no-ssh-password
+
     create_cmd = [AZURE_PATH,
                   'vm',
                   'create',
                   '--location=%s' % self.zone,
-                  '--virtual-network-name=%s' % self.network.vnet.name,
+                  '----vnet-name=%s' % self.network.vnet.name,
+                  '----resource-group=%s' % self.network.resource_group_account.name,
+
                   '--vm-size=%s' % self.machine_type,
                   self.name,
                   self.image,
