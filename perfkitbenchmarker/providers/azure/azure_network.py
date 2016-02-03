@@ -42,7 +42,7 @@ RESOURCE_GROUP_PREFIX = 'portalrgrp'
 
 class _AzureEndpoint(resource.BaseResource):
   """An object representing an endpoint to an Azure VM.
-
+@@ -118,14 +118,61 @@ def DisallowAllPorts(self):
   No deletion is specified, as endpoints are deleted along with the VM.
   """
   def __init__(self, vm_name, port, protocol):
@@ -127,13 +127,14 @@ class AzureResourceGroup(resource.BaseResource):
     self.storage_type = storage_type
     self.zone = zone
     #Dien - create new variable to store group
-
+#dd
 
   def _Create(self):
     """Creates the storage account."""
     create_cmd = [AZURE_PATH,
                   'group',
                   'create',
+                  '--location=%s' % self.zone,
                   self.name]
     vm_util.IssueCommand(create_cmd)
 
