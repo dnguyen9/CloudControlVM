@@ -54,115 +54,15 @@ _default_images_lock = threading.Lock()
 _default_images = None
 
 
-def _GetDefaultImagesFromAzure():
-  """Gets the default images for each OS type in _default_image_patterns.
+UBUNTU_IMAGE = 'Canonical:UbuntuServer:14.04.3-LTS'
+RHEL_IMAGE = 'OpenLogic:CentOS:7.1'
+WINDOWS_IMAGE = 'microsoftwindowsserver:WindowsServer:2012-R2-Datacenter'
 
-  Returns:
-    dict mapping OS_TYPE string to default image name string.
-
-  Raises:
-    errors.Error: If unable to get the default image for an OS_TYPE.
-  """
-  list_images_cmd = [AZURE_PATH, 'vm', 'image', 'list', '--json']
-  stdout, _ = vm_util.IssueRetryableCommand(list_images_cmd)
-  azure_vm_image_list = json.loads(stdout)
-  images_by_os_type = {}
-  for image in azure_vm_image_list:
-    for os_type, pattern in _default_image_patterns.iteritems():
-      match = pattern.match(image['name'])
-      if match:
-        image_name_fields = tuple(None if g is None else int(g)
-                                  for g in match.groups())
-        os_images = images_by_os_type.setdefault(os_type, {})
-        os_images[image_name_fields] = match.group(0)
-  default_images = {}
-  for os_type, pattern in _default_image_patterns.iteritems():
-    os_images = images_by_os_type.get(os_type)
-    if not os_images:
-      raise errors.Error(
-          'Unable to get Azure default {0} image. No image names match '
-          '{1}'.format(os_type, pattern.pattern))
-    default_images[os_type] = os_images[max(os_images)]
-  return default_images
-
-
-def _GetDefaultImage(os_type):
-  """Gets the default image name for a given VM operating system.
-
-  Args:
-    os_type: string. VM operating system.
-
-  Returns:
-    string. Name of the image.
-  """
-  global _default_images
-  if _default_images is None:
-    with _default_images_lock:
-      if _default_images is None:
-        _default_images = _GetDefaultImagesFromAzure()
-  return _default_images[os_type]
-
-
-class AzureService(resource.BaseResource):
-  """Object representing an Azure Service."""
-
-  def __init__(self, name, zone):
-    super(AzureService, self).__init__()
-    self.name = name
-    self.zone = zone
-
-  def _Create(self):
-    """Creates the Azure service."""
-    create_cmd = [AZURE_PATH,
-                  'service',
-                  'create',
-                  '--location=%s' % self.zone,
-                  self.name]
-    vm_util.IssueCommand(create_cmd)
-
-  def _Delete(self):
-    """Deletes the Azure service."""
-    delete_cmd = [AZURE_PATH,
-                  'service',
-                  'delete',
-                  '--quiet',
-                  self.name]
-    vm_util.IssueCommand(delete_cmd)
-
-  def _Exists(self):
-    """Returns true if the service exists."""
-    show_cmd = [AZURE_PATH,
-                'service',
-                'show',
-                '--json',
-                self.name]
-    stdout, _, _ = vm_util.IssueCommand(show_cmd, suppress_warning=True)
-    try:
-      json.loads(stdout)
-    except ValueError:
-      return False
-    return True
-
-
-class AzureVirtualMachineMetaClass(virtual_machine.AutoRegisterVmMeta):
-  """Metaclass for AzureVirtualMachine.
-
-  Registers default image pattern for each operating system.
-  """
-
-  def __init__(cls, name, bases, dct):
-    super(AzureVirtualMachineMetaClass, cls).__init__(name, bases, dct)
-    if hasattr(cls, 'OS_TYPE'):
-      assert cls.OS_TYPE, '{0} did not override OS_TYPE'.format(cls.__name__)
-      assert cls.DEFAULT_IMAGE_PATTERN, (
-          '{0} did not override DEFAULT_IMAGE_PATTERN'.format(cls.__name__))
-      _default_image_patterns[cls.OS_TYPE] = cls.DEFAULT_IMAGE_PATTERN
 
 
 class AzureVirtualMachine(virtual_machine.BaseVirtualMachine):
   """Object representing an Azure Virtual Machine."""
 
-  __metaclass__ = AzureVirtualMachineMetaClass
   CLOUD = providers.AZURE
   # Subclasses should override the default image pattern.
   DEFAULT_IMAGE_PATTERN = None
@@ -176,22 +76,48 @@ class AzureVirtualMachine(virtual_machine.BaseVirtualMachine):
     super(AzureVirtualMachine, self).__init__(vm_spec)
     self.network = azure_network.AzureNetwork.GetNetwork(self)
     self.firewall = azure_network.AzureFirewall.GetFirewall()
-#    self.service = AzureService(self.name, self.zone)
     disk_spec = disk.BaseDiskSpec()
     self.os_disk = azure_disk.AzureDisk(disk_spec, self.name, self.machine_type)
     self.max_local_disks = 1
 
   def _CreateDependencies(self):
     """Create VM dependencies."""
-#    self.service.Create()
-    # _GetDefaultImage may call the Azure CLI.
-    self.image = self.image or _GetDefaultImage(self.OS_TYPE)
+    self.image = self.image or self._GetDefaultImage()
 
   def _DeleteDependencies(self):
     """Delete VM dependencies."""
     if self.os_disk.name:
       self.os_disk.Delete()
-#    self.service.Delete()
+
+  def _GetDefaultImage(self):
+    """Returns the default image given the machine type and region.
+    Azure ARM command requires at mininum location, and publisher. example.
+    'azure vm image list --location eastus2 --sku "15.04"  --offer UbuntuServer --publisher canonical'
+    """
+
+    # If no default is configured, this will return None.
+    if self.DEFAULT_IMAGE_PATTERN is None:
+      return None
+
+    image_param = self.DEFAULT_IMAGE_PATTERN.split(':')
+
+    cmd = [AZURE_PATH,
+        'vm',
+        'image',
+        'list',
+        '--json',
+        '--location', self.zone,
+        '--publisher', str(image_param[0]),
+        '--offer', str(image_param[1]),
+        '--sku', str(image_param[2])]
+    stdout, _ = vm_util.IssueRetryableCommand(cmd)
+    if not stdout:
+      return None
+
+    images = json.loads(stdout)
+    # We want to return the latest version of the image, and the portion of the
+    # p image name is the image's creation date, we can just take the image with the 'largest' name.
+    return  max(images, key=lambda image: image['urn'])['urn']
 
   def _Create(self):
 #azure vm create --nic-name perfkit-nix --location eastus2 --resource-group dien --os-type linux --image-urn canonical:ubuntuserver:12.04.2-LTS:12.04.201306240 \
@@ -300,9 +226,11 @@ class DebianBasedAzureVirtualMachine(AzureVirtualMachine,
 
   # Example: ('b39f27a8b8c64d52b05eac6a62ebad85__Ubuntu-'
   #           '14_04_3-LTS-amd64-server-20150908-en-us-30GB')
-  DEFAULT_IMAGE_PATTERN = re.compile(
-      r'b39f27a8b8c64d52b05eac6a62ebad85__Ubuntu-14_04'
-      r'(?:_([0-9]+))?-LTS-amd64-server-([0-9]+)(?:[.]([0-9]+))?-en-us-30GB')
+  # arm mode - example:  Canonical:UbuntuServer:14.04.3-LTS:14.04.201602010
+  #DEFAULT_IMAGE_PATTERN = re.compile(
+  #    r'b39f27a8b8c64d52b05eac6a62ebad85__Ubuntu-14_04'
+  #    r'(?:_([0-9]+))?-LTS-amd64-server-([0-9]+)(?:[.]([0-9]+))?-en-us-30GB')
+   DEFAULT_IMAGE_PATTERN = UBUNTU_IMAGE
 
 
 class RhelBasedAzureVirtualMachine(AzureVirtualMachine,
@@ -310,9 +238,11 @@ class RhelBasedAzureVirtualMachine(AzureVirtualMachine,
 
   # Example: ('0b11de9248dd4d87b18621318e037d37__RightImage-'
   #           'CentOS-7.0-x64-v14.2.1')
-  DEFAULT_IMAGE_PATTERN = re.compile(
-      r'0b11de9248dd4d87b18621318e037d37__RightImage-CentOS-7[.]([0-9]+)-x64-'
-      r'v([0-9]+)(?:[.]([0-9]+))?(?:[.]([0-9]+))?(?:[.]([0-9]+))?')
+  #DEFAULT_IMAGE_PATTERN = re.compile(
+  #    r'0b11de9248dd4d87b18621318e037d37__RightImage-CentOS-7[.]([0-9]+)-x64-'
+  #    r'v([0-9]+)(?:[.]([0-9]+))?(?:[.]([0-9]+))?(?:[.]([0-9]+))?')
+
+   DEFAULT_IMAGE_PATTERN = RHEL_IMAGE
 
 
 class WindowsAzureVirtualMachine(AzureVirtualMachine,
@@ -320,9 +250,7 @@ class WindowsAzureVirtualMachine(AzureVirtualMachine,
 
   # Example: ('a699494373c04fc0bc8f2bb1389d6106__Windows-Server'
   #           '-2012-R2-201505.01-en.us-127GB.vhd')
-  DEFAULT_IMAGE_PATTERN = re.compile(
-      r'a699494373c04fc0bc8f2bb1389d6106__Windows-Server'
-      r'-2012-R2-([0-9]+)(?:[.]([0-9]+))?-en.us-127GB.vhd')
+  DEFAULT_IMAGE_PATTERN = WINDOWS_IMAGE
 
   def __init__(self, vm_spec):
     super(WindowsAzureVirtualMachine, self).__init__(vm_spec)

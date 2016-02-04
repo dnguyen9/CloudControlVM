@@ -285,12 +285,12 @@ class AzureNetwork(network.BaseNetwork):
   @vm_util.Retry()
   def Create(self):
     """Creates the actual network."""
-    self.resource_group_account.Create()
-    self.storage_account.Create()
-    self.vnet.Create()
+#    self.resource_group_account.Create()
+#    self.storage_account.Create()
+#    self.vnet.Create()
 
   def Delete(self):
     """Deletes the actual network."""
-    self.vnet.Delete()
-    self.storage_account.Delete()
-    self.resource_group_account.Delete()
+ #   self.vnet.Delete()
+ #   self.storage_account.Delete()
+ #   self.resource_group_account.Delete()
