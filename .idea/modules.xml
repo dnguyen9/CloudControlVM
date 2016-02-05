@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/PerfKitBenchmarker-Dn.iml" filepath="$PROJECT_DIR$/.idea/PerfKitBenchmarker-Dn.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/PerfKitBenchmarker.iml" filepath="$PROJECT_DIR$/.idea/PerfKitBenchmarker.iml" />
     </modules>
   </component>
 </project>
