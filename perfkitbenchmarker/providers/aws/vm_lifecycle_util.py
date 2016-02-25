@@ -39,13 +39,21 @@ AWS_REGIONS = {
                'sa-east-1',
                'ap-southeast-2',}
 
+AWS_EXCLUDE_SHUTDOWN  = {
+               'i-35c644bc',
+               'i-78b09de0',}
 
 
 def DoShutdownVM():
 
   for region in AWS_REGIONS:
-    print region
-    print _GetVMList(region)
+    print "Traversing in region: ", region
+    vm_list =  _GetVMList(region)
+    if vm_list  <> None:
+        for vm in vm_list:
+            if not vm in (AWS_EXCLUDE_SHUTDOWN):
+                print "shutting down:", vm
+                _StopInstance(vm,region)
 
 def _GetVMList(region):
     """Returns the default image given the machine type and region.
@@ -71,8 +79,19 @@ def _GetVMList(region):
     return vm
 
 
+def _StopInstance(instance_ids, region):
+    #aws ec2 stop-instances  --instance-ids i-77ade2ad --region us-west-2
+    describe_cmd = AWS_PREFIX + [
+        '--region=%s' % region,
+        'ec2',
+        'stop-instances',
+        '--instance-ids=%s' % instance_ids]
+    stdout, _ = IssueRetryableCommand(describe_cmd)
 
+    if not stdout:
+      return None
 
+    return stdout
 
 def CheckAWSVersion():
   """Warns the user if the Azure CLI isn't the expected version."""
