@@ -81,10 +81,12 @@ from perfkitbenchmarker import version
 from perfkitbenchmarker import vm_util
 from perfkitbenchmarker import windows_benchmarks
 from perfkitbenchmarker.configs import benchmark_config_spec
+from perfkitbenchmarker.providers.aws import vm_lifecycle_util
 from perfkitbenchmarker.publisher import SampleCollector
 
 STAGE_ALL = 'all'
 STAGE_PROVISION = 'provision'
+STAGE_VMSHUTDOWN = 'vm-shutdown'
 STAGE_PREPARE = 'prepare'
 STAGE_RUN = 'run'
 STAGE_CLEANUP = 'cleanup'
@@ -137,7 +139,7 @@ flags.DEFINE_enum(
 flags.DEFINE_enum(
     'run_stage', STAGE_ALL,
     [STAGE_ALL, STAGE_PROVISION, STAGE_PREPARE,
-     STAGE_RUN, STAGE_CLEANUP, STAGE_TEARDOWN],
+     STAGE_RUN, STAGE_CLEANUP, STAGE_TEARDOWN, STAGE_VMSHUTDOWN],
     'The stage of perfkitbenchmarker to run. By default it runs all stages.')
 flags.DEFINE_integer('duration_in_seconds', None,
                      'duration of benchmarks. '
@@ -365,6 +367,8 @@ def RunBenchmark(benchmark, collector, sequence_number, total_benchmarks,
       detailed_timer = timing_util.IntervalTimer()
       try:
         with end_to_end_timer.Measure('End to End'):
+          if FLAGS.run_stage in (STAGE_VMSHUTDOWN):
+            vm_lifecycle_util.DoShutdownVM()
           if FLAGS.run_stage in (STAGE_ALL, STAGE_PROVISION):
             DoProvisionPhase(benchmark_name, spec, detailed_timer)
 
@@ -595,6 +599,7 @@ def Main(argv=sys.argv):
   # Inject more help documentation
   # The following appends descriptions of the benchmarks and descriptions of
   # the benchmark sets to the help text.
+
   benchmark_sets_list = [
       '%s:  %s' %
       (set_name, benchmark_sets.BENCHMARK_SETS[set_name]['message'])

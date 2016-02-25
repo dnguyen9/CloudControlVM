@@ -16,15 +16,75 @@
 
 import re
 import string
+import logging
+import sys
+import json
+
 
 from perfkitbenchmarker import errors
 from perfkitbenchmarker import flags
 from perfkitbenchmarker import vm_util
+from perfkitbenchmarker.providers.aws import util
 
 
 AWS_PATH = 'aws'
-AWS_PREFIX = [AWS_PATH, '--output', 'json']
-FLAGS = flags.FLAGS
+AWS_PREFIX = [AWS_PATH, '--output', 'text']
+AWS_REGIONS = {
+               'us-east-1',
+               'us-west-1',
+               'us-west-2',
+               'eu-west-1',
+               'ap-northeast-1',
+               'ap-southeast-1',
+               'sa-east-1',
+               'ap-southeast-2',}
+
+
+
+def DoShutdownVM():
+
+  for region in AWS_REGIONS:
+    print region
+    print _GetVMList(region)
+
+def _GetVMList(region):
+    """Returns the default image given the machine type and region.
+
+    If no default is configured, this will return None.
+    """
+
+#aws  ec2 describe-instances --query 'Reservations[*].Instances[*][InstanceId,LaunchTime,PublicDnsName,Placement.AvailabilityZone,Tags[0].Value]' --filters "Name=instance-state-name,Values=running" --output table --region
+    describe_cmd = AWS_PREFIX + [
+        '--region=%s' % region,
+        'ec2',
+        'describe-instances',
+        '--query', 'Reservations[*].Instances[*].{InstanceId:InstanceId}',
+        '--filters',
+        "Name=instance-state-name,Values=running"]
+    stdout, _ = IssueRetryableCommand(describe_cmd)
+
+    if not stdout:
+      return None
+
+#    print json.dumps(vm)
+    vm =stdout.split()
+    return vm
+
+
+
+
+
+def CheckAWSVersion():
+  """Warns the user if the Azure CLI isn't the expected version."""
+  version_cmd = [AWS_PATH, 'version']
+  try:
+    stdout, _, _ = vm_util.IssueCommand(version_cmd,1)
+  except OSError:
+    # IssueCommand will raise an OSError if the CLI is not installed on the
+    # system. Since we don't want to warn users if they are doing nothing
+    # related to Azure, just do nothing if this is the case.
+    return
+  logging.warning(stdout.strip())
 
 
 def IsRegion(zone_or_region):
@@ -95,7 +155,7 @@ def IssueRetryableCommand(cmd, env=None):
   Returns:
     A tuple of stdout and stderr from running the provided command.
   """
-  stdout, stderr, retcode = vm_util.IssueCommand(cmd, env=env)
+  stdout, stderr, retcode = vm_util.IssueCommand(cmd,force_info_log=0, env=env)
   if retcode:
     raise errors.VmUtil.CalledProcessException(
         'Command returned a non-zero exit code.\n')
