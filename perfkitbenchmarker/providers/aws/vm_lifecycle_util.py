@@ -43,7 +43,7 @@ AWS_REGIONS = {
 AWS_EXCLUDE_SHUTDOWN  = {
                'i-35c644bc',
                'i-78b09de0',}
-AWS_STOP_ALL_VMS = 'no'
+AWS_STOP_ALL_VMS = 'yes'
 
 def DoShutdownVM():
 
@@ -76,7 +76,7 @@ def DoShutdownVM():
              tag ="N/A"
              try:
                  tag = vm['Instances'][0]['Tags'][0]['Value']
-                 print tag
+                 tag = tag[:15]
              except Exception:
                  pass
 
