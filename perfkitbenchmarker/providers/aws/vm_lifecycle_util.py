@@ -43,13 +43,14 @@ AWS_REGIONS = {
 AWS_EXCLUDE_SHUTDOWN  = {
                'i-35c644bc',
                'i-78b09de0',}
-AWS_STOP_ALL_VMS = 'yes'
+AWS_STOP_ALL_VMS = 'no'
 
 def DoShutdownVM():
 
   vm_tables = []
   storage_cost = {'gp2':0,'io1':0,'standard':0, 'Iops':0, 'Snapshot':0}
   rds_tables = []
+
   for region in AWS_REGIONS:
     print "Traversing in region: ", region
     vm_list =  _GetVMList(region)
@@ -58,6 +59,12 @@ def DoShutdownVM():
     storage_json = json.loads(storage_list)
     rds_list = _ListRDSInstances(region)
     rds_json = json.loads(rds_list)
+    snaps_list = _ListSnapshots(region)
+    snaps_json =json.loads(snaps_list)
+
+    if snaps_json <> None:
+      for snap in snaps_json['Snapshots']:
+          storage_cost['Snapshot'] += snap['VolumeSize']
 
     if rds_json <> None:
         for instance in rds_json['DBInstances']:
@@ -89,7 +96,7 @@ def DoShutdownVM():
                         vm['Instances'][0]['KeyName'],
                         vm['Instances'][0]['StateTransitionReason']]
              vm_tables.append(vm_info)
-             if vm_info[2] == 'running' and (not vm_info[1] in AWS_EXCLUDE_SHUTDOWN) and AWS_STOP_ALL_VMS == 'yes':
+             if vm_info[3] == 'running' and (not vm_info[1] in AWS_EXCLUDE_SHUTDOWN) and AWS_STOP_ALL_VMS == 'yes':
                  print "Shutting down running instance:", vm_info[1]
                  _StopInstance(vm_info[1],region)
 
@@ -98,7 +105,8 @@ def DoShutdownVM():
   print 'Daily Storage cost:'
   print  tabulate([['GP2 SSD',storage_cost['gp2'],round(storage_cost['gp2'] * .10 / 30,3)],
                  ['Provioned IOPS',storage_cost['io1'],round((storage_cost['io1'] * .125 + storage_cost['Iops'] * .065) / 30,3)],
-                 ['Standard',storage_cost['standard'],round(storage_cost['standard'] * .05 /30,3)]],
+                 ['Standard',storage_cost['standard'],round(storage_cost['standard'] * .05 /30,3)],
+                 ['Snapshot',storage_cost['Snapshot'],round(storage_cost['Snapshot'] * .10 /30,3)]],
                  ["Storage Type","Size_GB","Daily Cost $"])
 
 def _GetVMList(region):
@@ -158,7 +166,8 @@ def _ListSnapshots(region):
     describe_cmd = AWS_PREFIX + [
         '--region=%s' % region,
         'ec2',
-        'describe-snapshots']
+        'describe-snapshots',
+        '--owner=self',]
     stdout, _ = IssueRetryableCommand(describe_cmd)
 
     if not stdout:
