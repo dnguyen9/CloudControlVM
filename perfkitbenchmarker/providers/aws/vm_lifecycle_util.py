@@ -35,6 +35,7 @@ AWS_REGIONS = {
                'us-west-2',
                'eu-west-1',
                'ap-northeast-1',
+               'ap-northeast-2',
                'ap-southeast-1',
                'sa-east-1',
                'ap-southeast-2',}
@@ -42,19 +43,26 @@ AWS_REGIONS = {
 AWS_EXCLUDE_SHUTDOWN  = {
                'i-35c644bc',
                'i-78b09de0',}
-
+AWS_STOP_ALL_VMS = 'no'
 
 def DoShutdownVM():
 
   vm_tables = []
   storage_cost = {'gp2':0,'io1':0,'standard':0, 'Iops':0, 'Snapshot':0}
-
+  rds_tables = []
   for region in AWS_REGIONS:
     print "Traversing in region: ", region
     vm_list =  _GetVMList(region)
     vm_json = json.loads(vm_list)
     storage_list = _ListVolumes(region)
     storage_json = json.loads(storage_list)
+    rds_list = _ListRDSInstances(region)
+    rds_json = json.loads(rds_list)
+
+    if rds_json <> None:
+        for instance in rds_json['DBInstances']:
+            rds_info = [region, instance['Engine'],instance['DBInstanceClass'],instance['AllocatedStorage'], instance['DBInstanceStatus']]
+            rds_tables.append(rds_info)
 
     for volume in storage_json:
       type = volume['VolumeType']
@@ -65,20 +73,33 @@ def DoShutdownVM():
 
     if vm_json  <> None:
         for vm in vm_json['Reservations']:
-             vm_info = [region,vm['Instances'][0]['InstanceId'],vm['OwnerId'],vm['Instances'][0]['State']['Name'],vm['Instances'][0]['InstanceType']]
+             tag ="N/A"
+             try:
+                 tag = vm['Instances'][0]['Tags'][0]['Value']
+                 print tag
+             except Exception:
+                 pass
+
+             vm_info = [region,
+                        vm['Instances'][0]['InstanceId'],
+                        tag,
+                        vm['Instances'][0]['State']['Name'],
+                        vm['Instances'][0]['InstanceType'],
+                        vm['Instances'][0]['LaunchTime'],
+                        vm['Instances'][0]['KeyName'],
+                        vm['Instances'][0]['StateTransitionReason']]
              vm_tables.append(vm_info)
-             if vm_info[3] == 'running' and not vm_info[1] in AWS_EXCLUDE_SHUTDOWN:
+             if vm_info[2] == 'running' and (not vm_info[1] in AWS_EXCLUDE_SHUTDOWN) and AWS_STOP_ALL_VMS == 'yes':
                  print "Shutting down running instance:", vm_info[1]
                  _StopInstance(vm_info[1],region)
 
-  print tabulate(vm_tables,["Region","InstanceId","OwnerID","Status","Size"])
+  print tabulate(vm_tables,["Region","InstanceId","Name", "Status","Size","Launch Date", "Key","StateTransitionReason"])
+  print tabulate(rds_tables,["Region","DBInstance","DB_Size","Size_GB","Status"])
   print 'Daily Storage cost:'
   print  tabulate([['GP2 SSD',storage_cost['gp2'],round(storage_cost['gp2'] * .10 / 30,3)],
                  ['Provioned IOPS',storage_cost['io1'],round((storage_cost['io1'] * .125 + storage_cost['Iops'] * .065) / 30,3)],
-                 ['Standard',storage_cost['standard'],round(storage_cost['standard'] * .05 /30,3)],
-                 ["Storage Type","Size_GB","Daily Cost $"]])
-
-
+                 ['Standard',storage_cost['standard'],round(storage_cost['standard'] * .05 /30,3)]],
+                 ["Storage Type","Size_GB","Daily Cost $"])
 
 def _GetVMList(region):
     """Returns the default image given the machine type and region.
@@ -138,6 +159,20 @@ def _ListSnapshots(region):
         '--region=%s' % region,
         'ec2',
         'describe-snapshots']
+    stdout, _ = IssueRetryableCommand(describe_cmd)
+
+    if not stdout:
+      return None
+    return stdout
+
+def _ListRDSInstances(region):
+    #PS C:\Users\dnguyen> aws ec2 describe-volumes --query 'Volumes[*].{ID:VolumeId,VolumeType:VolumeType,AZ:AvailabilityZone,Size:Size}'
+    #aws ec2 stop-instances  --instance-ids i-77ade2ad --region us-west-2
+    #aws ec2 describe-volumes --query 'Volumes[*].{ID:VolumeId,VolumeType:VolumeType,AZ:AvailabilityZone
+    describe_cmd = AWS_PREFIX + [
+        '--region=%s' % region,
+        'rds',
+        'describe-db-instances']
     stdout, _ = IssueRetryableCommand(describe_cmd)
 
     if not stdout:
