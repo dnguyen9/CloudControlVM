@@ -19,7 +19,7 @@ import string
 import logging
 import sys
 import json
-
+from tabulate import tabulate
 
 from perfkitbenchmarker import errors
 from perfkitbenchmarker import flags
@@ -28,7 +28,7 @@ from perfkitbenchmarker.providers.aws import util
 
 
 AWS_PATH = 'aws'
-AWS_PREFIX = [AWS_PATH, '--output', 'text']
+AWS_PREFIX = [AWS_PATH, '--output', 'json']
 AWS_REGIONS = {
                'us-east-1',
                'us-west-1',
@@ -46,14 +46,39 @@ AWS_EXCLUDE_SHUTDOWN  = {
 
 def DoShutdownVM():
 
+  vm_tables = []
+  storage_cost = {'gp2':0,'io1':0,'standard':0, 'Iops':0, 'Snapshot':0}
+
   for region in AWS_REGIONS:
     print "Traversing in region: ", region
     vm_list =  _GetVMList(region)
-    if vm_list  <> None:
-        for vm in vm_list:
-            if not vm in (AWS_EXCLUDE_SHUTDOWN):
-                print "shutting down:", vm
-                _StopInstance(vm,region)
+    vm_json = json.loads(vm_list)
+    storage_list = _ListVolumes(region)
+    storage_json = json.loads(storage_list)
+
+    for volume in storage_json:
+      type = volume['VolumeType']
+      size =  volume['Size']
+      storage_cost[type] = size + storage_cost[type]
+      if type == 'io1':
+          storage_cost['Iops'] = storage_cost['Iops'] +  volume['Iops']
+
+    if vm_json  <> None:
+        for vm in vm_json['Reservations']:
+             vm_info = [region,vm['Instances'][0]['InstanceId'],vm['OwnerId'],vm['Instances'][0]['State']['Name'],vm['Instances'][0]['InstanceType']]
+             vm_tables.append(vm_info)
+             if vm_info[3] == 'running' and not vm_info[1] in AWS_EXCLUDE_SHUTDOWN:
+                 print "Shutting down running instance:", vm_info[1]
+                 _StopInstance(vm_info[1],region)
+
+  print tabulate(vm_tables,["Region","InstanceId","OwnerID","Status","Size"])
+  print 'Daily Storage cost:'
+  print  tabulate([['GP2 SSD',storage_cost['gp2'],round(storage_cost['gp2'] * .10 / 30,3)],
+                 ['Provioned IOPS',storage_cost['io1'],round((storage_cost['io1'] * .125 + storage_cost['Iops'] * .065) / 30,3)],
+                 ['Standard',storage_cost['standard'],round(storage_cost['standard'] * .05 /30,3)],
+                 ["Storage Type","Size_GB","Daily Cost $"]])
+
+
 
 def _GetVMList(region):
     """Returns the default image given the machine type and region.
@@ -65,19 +90,16 @@ def _GetVMList(region):
     describe_cmd = AWS_PREFIX + [
         '--region=%s' % region,
         'ec2',
-        'describe-instances',
-        '--query', 'Reservations[*].Instances[*].{InstanceId:InstanceId}',
-        '--filters',
-        "Name=instance-state-name,Values=running"]
+        'describe-instances']
+#        '--query', 'Reservations[*].Instances[*].{InstanceId:InstanceId}',
+#        '--filters',
+#        "Name=instance-state-name,Values=running"]
     stdout, _ = IssueRetryableCommand(describe_cmd)
 
     if not stdout:
       return None
 
-#    print json.dumps(vm)
-    vm =stdout.split()
-    return vm
-
+    return stdout
 
 def _StopInstance(instance_ids, region):
     #aws ec2 stop-instances  --instance-ids i-77ade2ad --region us-west-2
@@ -91,6 +113,35 @@ def _StopInstance(instance_ids, region):
     if not stdout:
       return None
 
+    return stdout
+def _ListVolumes(region):
+    #PS C:\Users\dnguyen> aws ec2 describe-volumes --query 'Volumes[*].{ID:VolumeId,VolumeType:VolumeType,AZ:AvailabilityZone,Size:Size}'
+    #aws ec2 stop-instances  --instance-ids i-77ade2ad --region us-west-2
+    #aws ec2 describe-volumes --query 'Volumes[*].{ID:VolumeId,VolumeType:VolumeType,AZ:AvailabilityZone
+    describe_cmd = AWS_PREFIX + [
+        '--region=%s' % region,
+        'ec2',
+        'describe-volumes',
+        '--query', 'Volumes[*].{ID:VolumeId,VolumeType:VolumeType,AZ:AvailabilityZone,Iops:Iops,Size:Size}',]
+    stdout, _ = IssueRetryableCommand(describe_cmd)
+
+    if not stdout:
+      return None
+
+    return stdout
+
+def _ListSnapshots(region):
+    #PS C:\Users\dnguyen> aws ec2 describe-volumes --query 'Volumes[*].{ID:VolumeId,VolumeType:VolumeType,AZ:AvailabilityZone,Size:Size}'
+    #aws ec2 stop-instances  --instance-ids i-77ade2ad --region us-west-2
+    #aws ec2 describe-volumes --query 'Volumes[*].{ID:VolumeId,VolumeType:VolumeType,AZ:AvailabilityZone
+    describe_cmd = AWS_PREFIX + [
+        '--region=%s' % region,
+        'ec2',
+        'describe-snapshots']
+    stdout, _ = IssueRetryableCommand(describe_cmd)
+
+    if not stdout:
+      return None
     return stdout
 
 def CheckAWSVersion():

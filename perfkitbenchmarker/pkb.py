@@ -623,6 +623,9 @@ def Main(argv=sys.argv):
 
   disk.WarnAndTranslateDiskFlags()
 
+  vm_lifecycle_util.DoShutdownVM()
+  return None
+
   SetUpPKB()
 
   return RunBenchmarks()
