@@ -15,7 +15,17 @@
 # limitations under the License.
 
 import sys
+from perfkitbenchmarker.providers.aws import vm_lifecycle_util
 
-from perfkitbenchmarker.pkb import Main
+def main(argv):
 
-sys.exit(Main())
+  if len(argv) < 2:
+    print("Valid parameters are: pkb [cloudname] [stop, list]")
+    return 1
+
+vm_lifecycle_util.ExecuteAction(sys.argv[1],sys.argv[2])
+
+#from perfkitbenchmarker.pkb import Main
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

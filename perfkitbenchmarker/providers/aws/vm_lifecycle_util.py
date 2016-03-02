@@ -25,7 +25,8 @@ from perfkitbenchmarker import errors
 from perfkitbenchmarker import flags
 from perfkitbenchmarker import vm_util
 from perfkitbenchmarker.providers.aws import util
-
+import threading
+import time
 
 AWS_PATH = 'aws'
 AWS_PREFIX = [AWS_PATH, '--output', 'json']
@@ -44,6 +45,58 @@ AWS_EXCLUDE_SHUTDOWN  = {
                'i-35c644bc',
                'i-78b09de0',}
 AWS_STOP_ALL_VMS = 'no'
+
+vm_tables = []
+exitFlag = 1
+
+class AWS (threading.Thread):
+    def __init__(self, threadID, region):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.region = region
+    def run(self):
+        print "Starting " + self.region
+        print_time(self.region)
+        print "Exiting " +  self.region
+
+def print_time(region):
+    vm_list =  _GetVMList(region)
+    vm_json = json.loads(vm_list)
+    if vm_json  <> None:
+        for vm in vm_json['Reservations']:
+             tag ="N/A"
+             try:
+                 tag = vm['Instances'][0]['Tags'][0]['Value']
+                 tag = tag[:15]
+             except Exception:
+                 pass
+
+             vm_info = [region,
+                        vm['Instances'][0]['InstanceId'],
+                        tag,
+                        vm['Instances'][0]['State']['Name'],
+                        vm['Instances'][0]['InstanceType'],
+                        vm['Instances'][0]['LaunchTime'],
+                        vm['Instances'][0]['KeyName'],
+                        vm['Instances'][0]['StateTransitionReason']]
+             vm_tables.append(vm_info)
+
+def ExecuteAction(cloud, action):
+  print cloud, action
+  threadLock = threading.Lock()
+  threads = []
+
+  counter = 0
+  for region in AWS_REGIONS:
+      thread = AWS(counter,region)
+      thread.start()
+      threads.append(thread)
+      counter +=1
+  # Wait for all threads to complete
+  for t in threads:
+      t.join()
+  print tabulate(vm_tables,["Region","InstanceId","Name", "Status","Size","Launch Date", "Key","StateTransitionReason"])
+
 
 def DoShutdownVM():
 
